@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopEase E-Commerce</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f6fb;color:#222}
+header{background:#172554;color:white;padding:20px 7%;display:flex;justify-content:space-between;align-items:center}
+button,select,input{padding:11px;border-radius:7px;border:1px solid #ddd}
+button{cursor:pointer;background:#2563eb;color:white;border:none}
+header button{background:#facc15;color:#172554;font-weight:bold}
+.hero{text-align:center;padding:45px 15px;background:linear-gradient(120deg,#dbeafe,#ede9fe)}
+.hero h2{font-size:32px;margin-bottom:12px}
+.controls{display:flex;gap:10px;padding:25px 7%;flex-wrap:wrap}
+input{flex:1;min-width:180px}
+.products{padding:0 7% 35px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px}
+.card{background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px #0001}
+.card img{width:100%;height:190px;object-fit:cover}
+.info{padding:16px}
+.info h3{margin:10px 0}
+.price{font-size:21px;font-weight:bold;color:#15803d;margin:12px 0}
+.add{width:100%}
+#cartPanel{display:none;margin:20px 7%;background:white;padding:20px;border-radius:10px}
+.cart-item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #ddd;flex-wrap:wrap}
+.total{font-size:22px;font-weight:bold;margin:18px 0}
+footer{text-align:center;padding:22px;background:#172554;color:white}
+@media(max-width:600px){header{padding:18px}.hero h2{font-size:25px}.controls{padding:20px}.products{padding:0 20px 30px}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>ShopEase</h1>
+<button onclick="toggleCart()">🛒 Cart (<span id="count">0</span>)</button>
+</header>
+
+<section class="hero">
+<h2>Discover Your Next Favorite</h2>
+<p>Shop quality products at amazing prices.</p>
+</section>
+
+<section class="controls">
+<input id="search" placeholder="Search products..." oninput="render()">
+<select id="category" onchange="render()">
+<option value="All">All Categories</option>
+<option>Electronics</option>
+<option>Fashion</option>
+<option>Accessories</option>
+</select>
+<select id="sort" onchange="render()">
+<option value="default">Sort by Price</option>
+<option value="low">Low to High</option>
+<option value="high">High to Low</option>
+</select>
+</section>
+
+<main>
+<section class="products" id="products"></section>
+<section id="cartPanel">
+<h2>Shopping Cart</h2>
+<div id="cartItems"></div>
+<p class="total">Total: ₹<span id="total">0</span></p>
+<button onclick="checkout()">Place Demo Order</button>
+</section>
+</main>
+
+<footer>© 2026 ShopEase | E-Commerce Capstone Project</footer>
+
+<script>
+const products=[
+{id:1,name:"Wireless Headphones",category:"Electronics",price:1499,image:"https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80"},
+{id:2,name:"Smart Watch",category:"Electronics",price:2499,image:"https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80"},
+{id:3,name:"Classic Sneakers",category:"Fashion",price:1999,image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80"},
+{id:4,name:"Everyday Backpack",category:"Fashion",price:999,image:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=500&q=80"},
+{id:5,name:"Stylish Sunglasses",category:"Accessories",price:699,image:"https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=500&q=80"},
+{id:6,name:"Digital Camera",category:"Electronics",price:4999,image:"https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=500&q=80"}
+];
+
+let cart=JSON.parse(localStorage.getItem("shopEaseCart")||"[]");
+
+function render(){
+let q=document.getElementById("search").value.toLowerCase();
+let c=document.getElementById("category").value;
+let s=document.getElementById("sort").value;
+let list=products.filter(p=>p.name.toLowerCase().includes(q)&&(c==="All"||p.category===c));
+if(s==="low")list.sort((a,b)=>a.price-b.price);
+if(s==="high")list.sort((a,b)=>b.price-a.price);
+
+document.getElementById("products").innerHTML=list.length?list.map(p=>`
+<article class="card">
+<img src="${p.image}" alt="${p.name}" loading="lazy">
+<div class="info">
+<small>${p.category}</small>
+<h3>${p.name}</h3>
+<p class="price">₹${p.price}</p>
+<button class="add" onclick="addToCart(${p.id})">Add to Cart</button>
+</div></article>`).join(""):"<p>No products found.</p>";
+}
+
+function saveCart(){
+localStorage.setItem("shopEaseCart",JSON.stringify(cart));
+updateCart();
+}
+
+function addToCart(id){
+let item=cart.find(i=>i.id===id);
+if(item)item.qty++;
+else cart.push({id,qty:1});
+saveCart();
+}
+
+function updateCart(){
+document.getElementById("count").textContent=cart.reduce((s,i)=>s+i.qty,0);
+document.getElementById("cartItems").innerHTML=cart.map(i=>{
+let p=products.find(p=>p.id===i.id);
+return `<div class="cart-item">
+<span>${p.name} — ₹${p.price}</span>
+<div>
+<button onclick="changeQty(${i.id},-1)">−</button>
+${i.qty}
+<button onclick="changeQty(${i.id},1)">+</button>
+<button onclick="removeItem(${i.id})">Remove</button>
+</div></div>`;
+}).join("")||"<p>Your cart is empty.</p>";
+document.getElementById("total").textContent=cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0);
+}
+
+function changeQty(id,amount){
+let item=cart.find(i=>i.id===id);
+if(item)item.qty+=amount;
+cart=cart.filter(i=>i.qty>0);
+saveCart();
+}
+
+function removeItem(id){
+cart=cart.filter(i=>i.id!==id);
+saveCart();
+}
+
+function toggleCart(){
+let panel=document.getElementById("cartPanel");
+panel.style.display=panel.style.display==="block"?"none":"block";
+updateCart();
+}
+
+function checkout(){
+if(!cart.length){alert("Your cart is empty!");return;}
+alert("Demo order placed successfully! This is a practice project, not a real payment.");
+cart=[];
+saveCart();
+}
+
+render();
+updateCart();
+</script>
+</body>
+</html>
